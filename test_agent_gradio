@@ -1,0 +1,132 @@
+import os
+
+from dotenv import load_dotenv
+from AgentMapSearchRec import AgentMapSearchRec
+load_dotenv()
+GROQ_API_KEY = os.getenv('GROQ_API_KEY')
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+GOOGLE_MAPS_API_KEY = os.getenv('GOOGLE_MAPS_API_KEY')
+
+map_rec_agent = AgentMapSearchRec(OPENAI_API_KEY=OPENAI_API_KEY, GOOGLE_MAPS_API_KEY=GOOGLE_MAPS_API_KEY)
+
+# map_rec_agent._get_place_id_info('ChIJD1XfF7Mi2jER1IZUNTtg-Xo')
+user_search_request_str = "outdoor dining in kawaguchiko"
+search_output_specifics = map_rec_agent.parse_user_search_request(user_search_request_str)
+search_output_specifics.location
+search_output_specifics.search_type
+search_output_specifics.criteria
+recommendations = map_rec_agent.get_top_recommendations(user_search_request_str)
+for rec in recommendations:
+    print(rec.name)
+    print(rec.photo_url)
+    print(rec.maps_location_url)
+    print(rec.selection_reason)
+    print(rec.summary)
+    print('\n')
+recommendations[0]
+import gradio as gr
+with gr.Blocks() as demo:
+    for rec in recommendations:
+        with gr.Row():
+            name_summary = gr.Textbox(label="Description",value=f"Name: {rec.name}\nSelection criteria: {rec.selection_reason}\nSummary: {rec.summary}", interactive=False)
+            image = gr.Gallery(value=rec.photo_url, interactive=False)
+            map_link = gr.HTML(value=f'<a href="{rec.maps_location_url}" target="_blank">Map link</a>')
+
+demo.launch()
+
+import gradio as gr
+
+# Assuming map_rec_agent.get_top_recommendations() returns a list of recommendation objects
+# Each recommendation object has 'name', 'photo_url', 'summary', 'maps_location_url'
+
+import gradio as gr
+
+# Assuming map_rec_agent.get_top_recommendations() returns a list of recommendation objects
+# Each recommendation object has 'name', 'photo_url', 'summary', 'maps_location_url'
+
+def display_recommendations(input_text):
+    # Fetch recommendations from the agent
+    recommendations = map_rec_agent.get_top_recommendations(input_text)
+    return recommendations
+
+# Create the Gradio interface
+with gr.Blocks() as demo:
+    # Input box for user to search for recommendations
+    input_text = gr.Textbox(label="Search for food/hotel/others in an area and retrieve top recommendations")
+    # Outputs for the name/summary, image, and Google Maps link
+    recommend_btn = gr.Button("Recommend")
+    # recommend_btn.click(map_rec_agent.get_top_recommendations, inputs=input_text, outputs=None)
+    recommendations = map_rec_agent.get_top_recommendations(input_text)
+    for rec in recommendations:
+        with gr.Row():
+            name_summary = gr.Textbox(value=f"Name: {rec.name}\nSummary: {rec.summary}", interactive=False)
+            image = gr.Gallery(value=rec.photo_url, interactive=False)
+            map_link = gr.HTML(value=f'<a href="{rec.maps_location_url}" target="_blank">Open in Google Maps</a>')
+
+# Launch the Gradio app
+demo.launch()
+
+import gradio as gr
+
+# Example function to process input text and return a list of recommendations
+def process_input(input_text):
+    # Simulate some recommendations based on input text
+    recommendations = map_rec_agent.get_top_recommendations(input_text)
+    return recommendations
+
+# Function to dynamically generate components based on recommendations
+def update_recommendations(input_text):
+    recommendations = map_rec_agent.get_top_recommendations(input_text)
+    output = []
+    for rec in recommendations:
+        # Create components for each recommendation
+        name_summary = f"Name: {rec.name}\nSelection criteria: {rec.selection_reason}\nSummary: {rec.summary}"
+        image = rec.photo_url
+        map_link = f'<a href="{rec.maps_location_url}" target="_blank">Map link</a>'
+        output.append((name_summary, image[0], map_link))
+    return output
+
+def update_recommendations(input_text):
+    recommendations = process_input(input_text)
+    
+    # Set up outputs for each recommendation, fill with data or empty strings
+    name_summaries = []
+    galleries = []
+    map_links = []
+    
+    for rec in recommendations:
+        name_summaries.append(f"Name: {rec.name}\nSelection criteria: {rec.selection_reason}\nSummary: {rec.summary}")
+        galleries.append(rec.photo_urls)  # List of image URLs (no captions needed)
+        map_links.append(f'<a href="{rec.maps_location_url}" target="_blank">Map link</a>')
+    
+    # Fill up with empty values for any remaining unused slots
+    max_recommendations = 5  # Assume we're only showing up to 5 recommendations
+    name_summaries += [""] * (max_recommendations - len(name_summaries))
+    galleries += [[]] * (max_recommendations - len(galleries))
+    map_links += [""] * (max_recommendations - len(map_links))
+    
+    return name_summaries, galleries, map_links
+
+# Create the Gradio interface
+with gr.Blocks() as demo:
+    input_box = gr.Textbox(label="Enter some text")
+    submit_button = gr.Button("Submit")
+    # Predefine outputs for up to 5 recommendation rows
+    textboxes = [gr.Textbox(label=f"Description {i+1}", interactive=False) for i in range(5)]
+    galleries = [gr.Gallery(label=f"Gallery {i+1}", interactive=False) for i in range(5)]
+    html_links = [gr.HTML(label=f"Map Link {i+1}") for i in range(5)]
+    # Organize them into rows
+    with gr.Column():
+        for i in range(5):
+            with gr.Row():
+                textboxes[i]
+                galleries[i]
+                html_links[i]
+    # Connect the button to the function
+    submit_button.click(
+        update_recommendations,
+        inputs=input_box,
+        outputs=textboxes + galleries + html_links  # Output all components
+    )
+
+demo.launch()
